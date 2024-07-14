@@ -105,14 +105,12 @@ async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) 
     while let Some(Ok(msg)) = client_rx.next().await {
         match msg {
             Message::Close(_) => return,
-            Message::Text(txt) => match serde_json::from_str::<WSMessage>(&txt) {
+            Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(&txt) {
                 Ok(ws_message) => {
-                    let a: WSMessage = ws_message;
-                    match ws_message {
-                        WSMessage::Init(i) => todo!(),
-                        WSMessage::Draw(i) => todo!(),
+                    if let WSMessage::Draw(update) = ws_message {
+                        app.pixels.lock().await[update.offset] = update.color;
                     }
-                    if app.broadcast_tx.lock().await.send("Hi".into()).is_err() {
+                    if app.broadcast_tx.lock().await.send(msg).is_err() {
                         println!("Failed to broadcast a message");
                     }
                 }
