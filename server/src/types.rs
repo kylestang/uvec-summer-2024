@@ -2,6 +2,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct Pixel(pub u8, pub u8, pub u8);
+impl Default for Pixel {
+    fn default() -> Self {
+        Pixel(0xFF, 0xFF, 0xFF)
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "tag", rename_all = "lowercase")]

@@ -25,24 +25,10 @@ use types::Pixel;
 const RESOLUTION: (usize, usize) = (100, 100);
 
 #[derive(Debug, Clone)]
-struct BoardState {
-    resolution: (usize, usize),
-    pixels: [Pixel; RESOLUTION.0 * RESOLUTION.1],
-}
-
-impl Default for BoardState {
-    fn default() -> Self {
-        BoardState {
-            resolution: RESOLUTION,
-            pixels: [Pixel(0xFF, 0xFF, 0xFF); RESOLUTION.0 * RESOLUTION.1],
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 struct AppState {
     broadcast_tx: Arc<Mutex<Sender<Message>>>,
-    board_state: BoardState,
+    #[allow(dead_code)]
+    pixels: [Pixel; RESOLUTION.0 * RESOLUTION.1],
 }
 
 #[tokio::main]
@@ -60,7 +46,7 @@ async fn main() {
     let (tx, _) = broadcast::channel(32);
     let app = AppState {
         broadcast_tx: Arc::new(Mutex::new(tx)),
-        board_state: BoardState::default(),
+        pixels: [Pixel::default(); RESOLUTION.0 * RESOLUTION.1],
     };
     let app = Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
