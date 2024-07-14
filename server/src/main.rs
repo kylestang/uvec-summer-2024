@@ -20,6 +20,30 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod types;
+use types::Pixel;
+
+const RESOLUTION: (usize, usize) = (100, 100);
+
+#[derive(Debug, Clone)]
+struct BoardState {
+    resolution: (usize, usize),
+    pixels: [Pixel; RESOLUTION.0 * RESOLUTION.1],
+}
+
+impl Default for BoardState {
+    fn default() -> Self {
+        BoardState {
+            resolution: RESOLUTION,
+            pixels: [Pixel(0xFF, 0xFF, 0xFF); RESOLUTION.0 * RESOLUTION.1],
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct AppState {
+    broadcast_tx: Arc<Mutex<Sender<Message>>>,
+    board_state: BoardState,
+}
 
 #[tokio::main]
 async fn main() {
@@ -36,6 +60,7 @@ async fn main() {
     let (tx, _) = broadcast::channel(32);
     let app = AppState {
         broadcast_tx: Arc::new(Mutex::new(tx)),
+        board_state: BoardState::default(),
     };
     let app = Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
@@ -57,11 +82,6 @@ async fn main() {
     )
     .await
     .unwrap();
-}
-
-#[derive(Debug, Clone)]
-struct AppState {
-    broadcast_tx: Arc<Mutex<Sender<Message>>>,
 }
 
 async fn handler(ws: WebSocketUpgrade, State(app): State<AppState>) -> impl IntoResponse {
