@@ -28,6 +28,8 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
     let colorToPlace = initColorToPlace;
     let hoverOffset: number | null = null;
 
+    let timedOut = false;
+
     p5.setup = () => {
       p5.frameRate(60);
       p5.createCanvas(width * pixelSize, height * pixelSize);
@@ -75,11 +77,19 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
       const y = Math.floor(p5.mouseY / pixelSize);
       const offset = y * width + x;
 
+      timedOut = true;
+      hoverOffset = null;
+      p5.cursor('not-allowed')
+      setTimeout(() => {
+        timedOut = false;
+      }, 250);
+
       colorPixel(colorToPlace, offset); // let the server handle it
     };
 
     p5.mouseMoved = () => {
       if (
+        timedOut ||
         p5.mouseX < 0 ||
         p5.mouseX >= p5.width ||
         p5.mouseY < 0 ||
@@ -88,6 +98,7 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
         hoverOffset = null;
         return;
       }
+      p5.noCursor()
       console.debug(p5.mouseX, p5.mouseY);
       const x = Math.floor(p5.mouseX / pixelSize);
       const y = Math.floor(p5.mouseY / pixelSize);
