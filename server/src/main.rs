@@ -21,6 +21,8 @@ use axum::extract::ws::CloseFrame;
 
 use futures::{sink::SinkExt, stream::StreamExt};
 
+mod types;
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
