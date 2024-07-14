@@ -82,6 +82,14 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
       p5.cursor('not-allowed')
       setTimeout(() => {
         timedOut = false;
+        p5.noCursor()
+
+        const x = Math.floor(p5.mouseX / pixelSize);
+        const y = Math.floor(p5.mouseY / pixelSize);
+        const newOffset = y * width + x;
+        if (offset === newOffset) {
+          hoverOffset = offset
+        }
       }, 250);
 
       colorPixel(colorToPlace, offset); // let the server handle it
