@@ -10,7 +10,7 @@ impl Default for Pixel {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "tag", rename_all = "lowercase")]
-pub enum Message {
+pub enum WSMessage {
     Init {
         pixel: Vec<Pixel>,
         height: u32,

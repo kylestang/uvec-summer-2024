@@ -72,7 +72,6 @@ async fn main() {
 
 async fn handler(ws: WebSocketUpgrade, State(app): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, app))
-        .into_response()
 }
 
 async fn handle_socket(ws: WebSocket, app: AppState) {
@@ -94,8 +93,10 @@ async fn recv_from_client(
     broadcast_tx: Arc<Mutex<Sender<Message>>>,
 ) {
     while let Some(Ok(msg)) = client_rx.next().await {
-        if matches!(msg, Message::Close(_)) {
-            return;
+        match msg {
+            Message::Close(_) => return,
+            Message::Text(txt) => {}
+            _ => continue,
         }
         if broadcast_tx.lock().await.send(msg).is_err() {
             println!("Failed to broadcast a message");
