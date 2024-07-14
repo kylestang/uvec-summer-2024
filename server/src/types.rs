@@ -4,16 +4,15 @@ use serde::{Deserialize, Serialize};
 pub struct Pixel(pub u8, pub u8, pub u8);
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct InitMessage {
-    tag: String,
-    pixels: Vec<Pixel>,
-    height: u32,
-    width: u32,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct DrawMessage {
-    tag: String,
-    offset: u32,
-    color: Pixel,
+#[serde(tag = "tag", rename_all = "lowercase")]
+pub enum Message {
+    Init {
+        pixel: Vec<Pixel>,
+        height: u32,
+        width: u32,
+    },
+    Draw {
+        offset: u32,
+        color: Pixel,
+    },
 }
