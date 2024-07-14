@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const u8Schema = z.number().int().gte(0).lt(255);
+const u8Schema = z.number().int().gte(0).lte(255);
 
 const rgbSchema = z.tuple([u8Schema, u8Schema, u8Schema]).readonly();
 export type RGB = z.infer<typeof rgbSchema>;

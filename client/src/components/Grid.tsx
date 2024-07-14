@@ -5,29 +5,36 @@ import {
 } from "@p5-wrapper/react";
 import { Grid, RGB } from "../data";
 import { useMemo } from "react";
+import { ColorPixel } from "../App";
 
-type GridProps = Grid;
+type GridProps = Grid & {
+  colorPixel: ColorPixel;
+};
 
 type GridSketchProps = SketchProps & GridProps;
 
 const pixelSize = 4;
 
-function makeSketch({ height, width, pixels }: GridProps) {
+function makeSketch({ height, width, pixels, colorPixel }: GridProps) {
   const initPixels = pixels;
+  const initColorPixel = colorPixel;
 
   function sketch(p5: P5CanvasInstance<GridSketchProps>) {
-    console.log("sketching...")
+    console.log("sketching...");
     let pixels = initPixels;
+    let colorPixel = initColorPixel;
 
     p5.setup = () => {
-      p5.frameRate(30)
+      p5.frameRate(30);
       p5.createCanvas(width * pixelSize, height * pixelSize);
-      // p5.background(0, 255, 255);
-    }
+    };
 
     p5.updateWithProps = (props) => {
       if (props.pixels) {
         pixels = props.pixels;
+      }
+      if (props.colorPixel) {
+        colorPixel = props.colorPixel
       }
     };
 
@@ -42,24 +49,18 @@ function makeSketch({ height, width, pixels }: GridProps) {
       }
     };
 
-    let myColor: RGB = [255, 0, 0]
+    let myColor: RGB = [255, 0, 0];
     p5.mouseDragged = () => {
-      const x = Math.floor(p5.mouseX / pixelSize)
-      const y = Math.floor(p5.mouseY / pixelSize)
-      pixels[y*width+x] = myColor
-    }
+      const x = Math.floor(p5.mouseX / pixelSize);
+      const y = Math.floor(p5.mouseY / pixelSize);
+      colorPixel(myColor, y * width + x); // let the server handle it
+    };
   }
   return sketch;
 }
 
 export function AppGrid(props: GridProps) {
-
-
-  console.debug("rendering appgrid")
-
   const sketch = useMemo(() => makeSketch(props), []);
 
-  return (
-      <ReactP5Wrapper sketch={sketch} pixels={props.pixels} />
-  );
+  return <ReactP5Wrapper sketch={sketch} pixels={props.pixels} colorPixel={props.colorPixel} />;
 }

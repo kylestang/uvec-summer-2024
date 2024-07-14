@@ -1,10 +1,11 @@
-import { useEffect, useReducer } from "react";
+import { useState, useEffect, useReducer } from "react";
 import "./App.css";
-import { Grid, Message } from "./data";
+import { DrawMsg, Grid, Message, messageSchema, RGB } from "./data";
 import { AppGrid } from "./components/Grid";
 
+export type ColorPixel = (color: RGB, offset: number) => void;
+
 function gridReducer(state: Grid | null, action: Message): Grid | null {
-  // console.debug(action)
   switch (action.tag) {
     case "init": {
       const { pixels, height, width } = action;
@@ -33,39 +34,34 @@ function gridReducer(state: Grid | null, action: Message): Grid | null {
 
 function App() {
   const [grid, gridDispatch] = useReducer(gridReducer, null);
+  const [colorPixel, setColorPixel] = useState<ColorPixel>(() => () => {console.debug("not connected, can't color pixel!")});
 
   useEffect(() => {
-    const width = 100;
-    const height = 100;
-    gridDispatch({
-      tag: "init",
-      pixels: Array.from({ length: width * height }).map(() => [255, 255, 255]),
-      width,
-      height,
-    });
-
-    const theirColor = [0, 255, 0] as const;
-
-    const drawTicker = setInterval(
-      () =>
-        gridDispatch({
+    let ws = new WebSocket("ws://localhost:8080/ws");
+    ws.binaryType = "blob";
+    ws.onopen = () => {
+      
+      setColorPixel(() => (color: RGB, offset: number) => {
+        const msg: DrawMsg = {
           tag: "draw",
-          offset: Math.floor(Math.random() * width * height),
-          color: theirColor,
-        }),
-      1000
-    );
-
-    () => {
-      clearInterval(drawTicker);
+          color,
+          offset,
+        };
+        ws.send(JSON.stringify(msg));
+      });
+    };
+    ws.onmessage = (ev) => {
+      let { data } = ev;
+      if (typeof data != "string") return;
+      gridDispatch(messageSchema.parse(JSON.parse(data)));
     };
   }, []);
 
-  // useEffect(() => {
-  //   console.debug(grid)
-  // }, [grid])
-
-  return <>{!grid ? <h1>Loading...</h1> : <AppGrid {...grid} />}</>;
+  return (
+    <>
+      {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel }} />}
+    </>
+  );
 }
 
 export default App;
