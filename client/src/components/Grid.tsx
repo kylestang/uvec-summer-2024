@@ -22,7 +22,6 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
   const initColorToPlace = colorToPlace;
 
   function sketch(p5: P5CanvasInstance<GridSketchProps>) {
-    console.log("sketching...");
     let pixels = initPixels;
     let colorPixel = initColorPixel;
     let colorToPlace = initColorToPlace;
@@ -107,7 +106,6 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
         return;
       }
       p5.noCursor()
-      console.debug(p5.mouseX, p5.mouseY);
       const x = Math.floor(p5.mouseX / pixelSize);
       const y = Math.floor(p5.mouseY / pixelSize);
       const offset = y * width + x;
