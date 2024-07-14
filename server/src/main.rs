@@ -17,6 +17,7 @@ use tower_http::{
     services::ServeDir,
     trace::{DefaultMakeSpan, TraceLayer},
 };
+use tracing::{debug, error};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod types;
@@ -61,7 +62,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
         .unwrap();
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    debug!("listening on {}", listener.local_addr().unwrap());
 
     axum::serve(
         listener,
@@ -79,15 +80,14 @@ async fn handle_socket(ws: WebSocket, app: AppState) {
     let (ws_tx, ws_rx) = ws.split();
     let ws_tx = Arc::new(Mutex::new(ws_tx));
 
-    let init_struct = InitMessage {
+    let init_struct = WSMessage::Init(InitMessage {
         pixels: app.pixels.lock().await.to_vec(),
         width: RESOLUTION.0,
         height: RESOLUTION.1,
-    };
-    let ws_msg_struct = WSMessage::Init(init_struct);
-    let init_msg = Message::Text(serde_json::to_string(&ws_msg_struct).unwrap());
+    });
+    let init_msg = Message::Text(serde_json::to_string(&init_struct).unwrap());
     if ws_tx.lock().await.send(init_msg).await.is_err() {
-        eprintln!("Failed to broadcast a message");
+        error!("Failed to broadcast a message");
         return;
     }
 
@@ -105,13 +105,17 @@ async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) 
     while let Some(Ok(msg)) = client_rx.next().await {
         match msg {
             Message::Close(_) => return,
-            Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(&txt) {
+            Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(txt) {
                 Ok(ws_message) => {
                     if let WSMessage::Draw(update) = ws_message {
+                        if update.offset >= RESOLUTION.0 * RESOLUTION.1 {
+                            continue;
+                        }
                         app.pixels.lock().await[update.offset] = update.color;
-                    }
-                    if app.broadcast_tx.lock().await.send(msg).is_err() {
-                        println!("Failed to broadcast a message");
+
+                        if app.broadcast_tx.lock().await.send(msg).is_err() {
+                            error!("Failed to broadcast update");
+                        }
                     }
                 }
                 Err(_) => continue,
