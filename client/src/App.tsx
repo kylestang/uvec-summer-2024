@@ -47,7 +47,7 @@ function App() {
   }
 
   useEffect(() => {
-    let ws = new WebSocket("ws://localhost:8080/ws");
+    let ws = new WebSocket(`ws://${window.location.host}/ws`);
     ws.binaryType = "blob";
     ws.onopen = () => {
       setColorPixel(() => (color: RGB, offset: number) => {
