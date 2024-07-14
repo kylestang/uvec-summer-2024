@@ -1,25 +1,23 @@
+use axum::extract::State;
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
     routing::get,
     Router,
 };
-use axum_extra::TypedHeader;
-
-use std::borrow::Cow;
-use std::ops::ControlFlow;
+use futures::{sink::SinkExt, stream::StreamExt};
+use futures_util::stream::{SplitSink, SplitStream};
+use std::sync::Arc;
 use std::{net::SocketAddr, path::PathBuf};
+use tokio::sync::{
+    broadcast::{self, Receiver, Sender},
+    Mutex,
+};
 use tower_http::{
     services::ServeDir,
     trace::{DefaultMakeSpan, TraceLayer},
 };
-
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use axum::extract::connect_info::ConnectInfo;
-use axum::extract::ws::CloseFrame;
-
-use futures::{sink::SinkExt, stream::StreamExt};
 
 mod types;
 
@@ -28,23 +26,27 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_websockets=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "vikeplace=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
 
+    let (tx, _) = broadcast::channel(32);
+    let app = AppState {
+        broadcast_tx: Arc::new(Mutex::new(tx)),
+    };
     let app = Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
-        .route("/ws", get(ws_handler))
-        // logging so we can see whats going on
+        .route("/ws", get(handler))
+        .with_state(app)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         );
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
         .unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
@@ -57,145 +59,51 @@ async fn main() {
     .unwrap();
 }
 
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    user_agent: Option<TypedHeader<headers::UserAgent>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> impl IntoResponse {
-    let user_agent = if let Some(TypedHeader(user_agent)) = user_agent {
-        user_agent.to_string()
-    } else {
-        String::from("Unknown browser")
-    };
-    println!("`{user_agent}` at {addr} connected.");
-
-    ws.on_upgrade(move |socket| handle_socket(socket, addr))
+#[derive(Debug, Clone)]
+struct AppState {
+    broadcast_tx: Arc<Mutex<Sender<Message>>>,
 }
 
-async fn handle_socket(mut socket: WebSocket, who: SocketAddr) {
-    if socket.send(Message::Ping(vec![1, 2, 3])).await.is_ok() {
-        println!("Pinged {who}...");
-    } else {
-        println!("Could not send ping {who}!");
-        return;
-    }
-
-    if let Some(msg) = socket.recv().await {
-        if let Ok(msg) = msg {
-            if process_message(msg, who).is_break() {
-                return;
-            }
-        } else {
-            println!("client {who} abruptly disconnected");
-            return;
-        }
-    }
-
-    for i in 1..5 {
-        if socket
-            .send(Message::Text(format!("Hi {i} times!")))
-            .await
-            .is_err()
-        {
-            println!("client {who} abruptly disconnected");
-            return;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    }
-
-    let (mut sender, mut receiver) = socket.split();
-
-    let mut send_task = tokio::spawn(async move {
-        let n_msg = 20;
-        for i in 0..n_msg {
-            // In case of any websocket error, we exit.
-            if sender
-                .send(Message::Text(format!("Server message {i} ...")))
-                .await
-                .is_err()
-            {
-                return i;
-            }
-
-            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-        }
-
-        println!("Sending close to {who}...");
-        if let Err(e) = sender
-            .send(Message::Close(Some(CloseFrame {
-                code: axum::extract::ws::close_code::NORMAL,
-                reason: Cow::from("Goodbye"),
-            })))
-            .await
-        {
-            println!("Could not send Close due to {e}, probably it is ok?");
-        }
-        n_msg
-    });
-
-    let mut recv_task = tokio::spawn(async move {
-        let mut cnt = 0;
-        while let Some(Ok(msg)) = receiver.next().await {
-            cnt += 1;
-            // print message and break if instructed to do so
-            if process_message(msg, who).is_break() {
-                break;
-            }
-        }
-        cnt
-    });
-
-    // If any one of the tasks exit, abort the other.
-    tokio::select! {
-        rv_a = (&mut send_task) => {
-            match rv_a {
-                Ok(a) => println!("{a} messages sent to {who}"),
-                Err(a) => println!("Error sending messages {a:?}")
-            }
-            recv_task.abort();
-        },
-        rv_b = (&mut recv_task) => {
-            match rv_b {
-                Ok(b) => println!("Received {b} messages"),
-                Err(b) => println!("Error receiving messages {b:?}")
-            }
-            send_task.abort();
-        }
-    }
-
-    // returning from the handler closes the websocket connection
-    println!("Websocket context {who} destroyed");
+async fn handler(ws: WebSocketUpgrade, State(app): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(|socket| handle_socket(socket, app))
+        .into_response()
 }
 
-fn process_message(msg: Message, who: SocketAddr) -> ControlFlow<(), ()> {
-    match msg {
-        Message::Text(t) => {
-            println!(">>> {who} sent str: {t:?}");
-        }
-        Message::Binary(d) => {
-            println!(">>> {} sent {} bytes: {:?}", who, d.len(), d);
-        }
-        Message::Close(c) => {
-            if let Some(cf) = c {
-                println!(
-                    ">>> {} sent close with code {} and reason `{}`",
-                    who, cf.code, cf.reason
-                );
-            } else {
-                println!(">>> {who} somehow sent close message without CloseFrame");
-            }
-            return ControlFlow::Break(());
-        }
+async fn handle_socket(ws: WebSocket, app: AppState) {
+    let (ws_tx, ws_rx) = ws.split();
+    let ws_tx = Arc::new(Mutex::new(ws_tx));
 
-        Message::Pong(v) => {
-            println!(">>> {who} sent pong with {v:?}");
+    {
+        let broadcast_rx = app.broadcast_tx.lock().await.subscribe();
+        tokio::spawn(async move {
+            recv_broadcast(ws_tx, broadcast_rx).await;
+        });
+    }
+
+    recv_from_client(ws_rx, app.broadcast_tx).await;
+}
+
+async fn recv_from_client(
+    mut client_rx: SplitStream<WebSocket>,
+    broadcast_tx: Arc<Mutex<Sender<Message>>>,
+) {
+    while let Some(Ok(msg)) = client_rx.next().await {
+        if matches!(msg, Message::Close(_)) {
+            return;
         }
-        // You should never need to manually handle Message::Ping, as axum's websocket library
-        // will do so for you automagically by replying with Pong and copying the v according to
-        // spec. But if you need the contents of the pings you can see them here.
-        Message::Ping(v) => {
-            println!(">>> {who} sent ping with {v:?}");
+        if broadcast_tx.lock().await.send(msg).is_err() {
+            println!("Failed to broadcast a message");
         }
     }
-    ControlFlow::Continue(())
+}
+
+async fn recv_broadcast(
+    client_tx: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    mut broadcast_rx: Receiver<Message>,
+) {
+    while let Ok(msg) = broadcast_rx.recv().await {
+        if client_tx.lock().await.send(msg).await.is_err() {
+            return; // disconnected.
+        }
+    }
 }
