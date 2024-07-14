@@ -121,8 +121,6 @@ async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) 
     }
 }
 
-async fn handle_message() {}
-
 async fn recv_broadcast(
     client_tx: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     mut broadcast_rx: Receiver<Message>,
