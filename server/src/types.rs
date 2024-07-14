@@ -9,15 +9,21 @@ impl Default for Pixel {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct InitMessage {
+    pixel: Vec<Pixel>,
+    height: u32,
+    width: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DrawMessage {
+    offset: u32,
+    color: Pixel,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "tag", rename_all = "lowercase")]
 pub enum WSMessage {
-    Init {
-        pixel: Vec<Pixel>,
-        height: u32,
-        width: u32,
-    },
-    Draw {
-        offset: u32,
-        color: Pixel,
-    },
+    Init(InitMessage),
+    Draw(DrawMessage),
 }
