@@ -1,11 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
-}
+pub struct Pixel(u8, u8, u8);
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct InitMessage {
