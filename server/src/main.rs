@@ -25,7 +25,7 @@ mod types;
 use types::WSMessage;
 use types::{InitMessage, Pixel};
 
-const RESOLUTION: (usize, usize) = (5, 5);
+const RESOLUTION: (usize, usize) = (100, 100);
 
 #[derive(Debug, Clone)]
 struct AppState {
@@ -110,12 +110,15 @@ async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) 
             Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(txt) {
                 Ok(ws_message) => {
                     if let WSMessage::Draw(update) = ws_message {
-                        if last_msg_time.elapsed().as_millis() < 1_000 {
+                        if last_msg_time.elapsed().as_millis() < 250 {
+                            error!("Message blocked");
                             continue;
                         }
                         if update.offset >= RESOLUTION.0 * RESOLUTION.1 {
+                            error!("Message Outside range {}", update.offset);
                             continue;
                         }
+                        error!("Message GOOOD");
                         last_msg_time = Instant::now();
                         app.pixels.lock().await[update.offset] = update.color;
 

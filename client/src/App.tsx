@@ -2,6 +2,7 @@ import { useState, useEffect, useReducer } from "react";
 import "./App.css";
 import { DrawMsg, Grid, Message, messageSchema, RGB } from "./data";
 import { AppGrid } from "./components/Grid";
+import { RgbColor, RgbColorPicker } from "react-colorful";
 
 export type ColorPixel = (color: RGB, offset: number) => void;
 
@@ -34,13 +35,21 @@ function gridReducer(state: Grid | null, action: Message): Grid | null {
 
 function App() {
   const [grid, gridDispatch] = useReducer(gridReducer, null);
-  const [colorPixel, setColorPixel] = useState<ColorPixel>(() => () => {console.debug("not connected, can't color pixel!")});
+  const [colorPixel, setColorPixel] = useState<ColorPixel>(() => () => { console.debug("not connected, can't color pixel!") });
+  const [colorToPlace, setColorToPlace] = useState<RGB>([255, 0, 0]);
+
+  function convertToPicker(c: RgbColor) {
+    setColorToPlace([c.r, c.g, c.b])
+  }
+
+  function colorToRGB(): RgbColor {
+    return { r: colorToPlace[0], g: colorToPlace[1], b: colorToPlace[2] }
+  }
 
   useEffect(() => {
     let ws = new WebSocket("ws://localhost:8080/ws");
     ws.binaryType = "blob";
     ws.onopen = () => {
-      
       setColorPixel(() => (color: RGB, offset: number) => {
         const msg: DrawMsg = {
           tag: "draw",
@@ -59,12 +68,13 @@ function App() {
 
   return (
     <>
-     <div>
-    <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
-    <div className="canvas">
-    {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel }} />}
-    </div>
-  </div>
+      <div>
+        <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
+        <div className="canvas">
+          {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel, colorToPlace }} />}
+        </div>
+      </div>
+      <RgbColorPicker color={colorToRGB()} onChange={convertToPicker} />
     </>
   );
 }
