@@ -74,7 +74,7 @@ function App() {
           {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel, colorToPlace }} />}
         </div>
       </div>
-      <RgbColorPicker color={colorToRGB()} onChange={convertToPicker} />
+      <RgbColorPicker className="colorPicker" color={colorToRGB()} onChange={convertToPicker} />
     </>
   );
 }

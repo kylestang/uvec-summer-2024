@@ -8,6 +8,7 @@
     font-size: 5em;
     font-weight: 700;
     padding: 0.25em;
+    text-wrap: nowrap;
 }
 
 .blue {
@@ -25,4 +26,8 @@
 
 .canvas:hover {
     cursor: pointer;
+}
+
+.colorPicker {
+    float: left;
 }
