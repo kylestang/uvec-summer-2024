@@ -26,6 +26,7 @@ use types::WSMessage;
 use types::{InitMessage, Pixel};
 
 const RESOLUTION: (usize, usize) = (100, 100);
+const RATELIMIT_MS: u128 = 250;
 
 #[derive(Debug, Clone)]
 struct AppState {
@@ -80,6 +81,7 @@ async fn handler(ws: WebSocketUpgrade, State(app): State<AppState>) -> impl Into
 async fn handle_socket(ws: WebSocket, app: AppState) {
     let (ws_tx, ws_rx) = ws.split();
     let ws_tx = Arc::new(Mutex::new(ws_tx));
+    debug!("Client connected");
 
     let init_struct = WSMessage::Init(InitMessage {
         pixels: app.pixels.lock().await.to_vec(),
@@ -88,7 +90,7 @@ async fn handle_socket(ws: WebSocket, app: AppState) {
     });
     let init_msg = Message::Text(serde_json::to_string(&init_struct).unwrap());
     if ws_tx.lock().await.send(init_msg).await.is_err() {
-        error!("Failed to broadcast a message");
+        error!("Failed to send init message");
         return;
     }
 
@@ -106,28 +108,34 @@ async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) 
     let mut last_msg_time = Instant::now();
     while let Some(Ok(msg)) = client_rx.next().await {
         match msg {
-            Message::Close(_) => return,
+            Message::Close(_) => {
+                debug!("Client requested to close channel");
+                return;
+            }
             Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(txt) {
                 Ok(ws_message) => {
                     if let WSMessage::Draw(update) = ws_message {
-                        if last_msg_time.elapsed().as_millis() < 250 {
-                            error!("Message blocked");
+                        if last_msg_time.elapsed().as_millis() < RATELIMIT_MS {
+                            error!("Ratelimit hit, message blocked");
                             continue;
                         }
                         if update.offset >= RESOLUTION.0 * RESOLUTION.1 {
                             error!("Message Outside range {}", update.offset);
                             continue;
                         }
-                        error!("Message GOOOD");
                         last_msg_time = Instant::now();
                         app.pixels.lock().await[update.offset] = update.color;
+                        debug!("Pixel placed: {}", update.offset);
 
                         if app.broadcast_tx.lock().await.send(msg).is_err() {
                             error!("Failed to broadcast update");
                         }
                     }
                 }
-                Err(_) => continue,
+                Err(e) => {
+                    error!("Error parsing WSMessage: {}", e);
+                    continue;
+                }
             },
             _ => continue,
         }
@@ -140,6 +148,7 @@ async fn recv_broadcast(
 ) {
     while let Ok(msg) = broadcast_rx.recv().await {
         if client_tx.lock().await.send(msg).await.is_err() {
+            debug!("Client forcefully disconnected");
             return; // disconnected.
         }
     }
