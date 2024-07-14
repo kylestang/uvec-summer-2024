@@ -34,7 +34,7 @@ function makeSketch({ height, width, pixels, colorPixel }: GridProps) {
         pixels = props.pixels;
       }
       if (props.colorPixel) {
-        colorPixel = props.colorPixel
+        colorPixel = props.colorPixel;
       }
     };
 
@@ -50,7 +50,7 @@ function makeSketch({ height, width, pixels, colorPixel }: GridProps) {
     };
 
     let myColor: RGB = [255, 0, 0];
-    p5.mouseDragged = () => {
+    p5.mouseClicked = () => {
       const x = Math.floor(p5.mouseX / pixelSize);
       const y = Math.floor(p5.mouseY / pixelSize);
       colorPixel(myColor, y * width + x); // let the server handle it
@@ -62,5 +62,11 @@ function makeSketch({ height, width, pixels, colorPixel }: GridProps) {
 export function AppGrid(props: GridProps) {
   const sketch = useMemo(() => makeSketch(props), []);
 
-  return <ReactP5Wrapper sketch={sketch} pixels={props.pixels} colorPixel={props.colorPixel} />;
+  return (
+    <ReactP5Wrapper
+      sketch={sketch}
+      pixels={props.pixels}
+      colorPixel={props.colorPixel}
+    />
+  );
 }
