@@ -48,14 +48,14 @@ async fn main() {
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
 
     let (tx, _) = broadcast::channel(32);
-    let app = AppState {
+    let state = AppState {
         broadcast_tx: Arc::new(Mutex::new(tx)),
         pixels: Arc::new(Mutex::new([Pixel::default(); RESOLUTION.0 * RESOLUTION.1])),
     };
     let app = Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
         .route("/ws", get(handler))
-        .with_state(app)
+        .with_state(state)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
