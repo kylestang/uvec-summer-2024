@@ -14,7 +14,7 @@ type GridProps = Grid & {
 
 type GridSketchProps = SketchProps & GridProps;
 
-const pixelSize = 4;
+const pixelSize = 6;
 
 function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridProps) {
   const initPixels = pixels;
