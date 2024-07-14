@@ -35,19 +35,23 @@ function gridReducer(state: Grid | null, action: Message): Grid | null {
 
 function App() {
   const [grid, gridDispatch] = useReducer(gridReducer, null);
-  const [colorPixel, setColorPixel] = useState<ColorPixel>(() => () => { console.debug("not connected, can't color pixel!") });
+  const [colorPixel, setColorPixel] = useState<ColorPixel>(() => () => {
+    console.debug("not connected, can't color pixel!");
+  });
   const [colorToPlace, setColorToPlace] = useState<RGB>([255, 0, 0]);
 
   function convertToPicker(c: RgbColor) {
-    setColorToPlace([c.r, c.g, c.b])
+    setColorToPlace([c.r, c.g, c.b]);
   }
 
   function colorToRGB(): RgbColor {
-    return { r: colorToPlace[0], g: colorToPlace[1], b: colorToPlace[2] }
+    return { r: colorToPlace[0], g: colorToPlace[1], b: colorToPlace[2] };
   }
 
   useEffect(() => {
-    let ws = new WebSocket(`ws://${window.location.host}/ws`);
+    let ws = new WebSocket(
+      `${window.location.protocol === "http:" ? "ws" : "wss"}://${window.location.host}/ws`
+    );
     ws.binaryType = "blob";
     ws.onopen = () => {
       setColorPixel(() => (color: RGB, offset: number) => {
@@ -69,12 +73,23 @@ function App() {
   return (
     <>
       <div>
-        <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
-        <div className="canvasWrapper">
-        <div className="canvas">
-          {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel, colorToPlace }} />}
+        <div className="title">
+          <span className="blue">vike/</span>
+          <span className="gold">place</span>
         </div>
-        <RgbColorPicker className="colorPicker" color={colorToRGB()} onChange={convertToPicker} />
+        <div className="canvasWrapper">
+          <div className="canvas">
+            {!grid ? (
+              <h1>Loading...</h1>
+            ) : (
+              <AppGrid {...{ ...grid, colorPixel, colorToPlace }} />
+            )}
+          </div>
+          <RgbColorPicker
+            className="colorPicker"
+            color={colorToRGB()}
+            onChange={convertToPicker}
+          />
         </div>
       </div>
     </>
