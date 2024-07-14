@@ -26,9 +26,10 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
     let pixels = initPixels;
     let colorPixel = initColorPixel;
     let colorToPlace = initColorToPlace;
+    let hoverOffset: number | null = null;
 
     p5.setup = () => {
-      p5.frameRate(30);
+      p5.frameRate(60);
       p5.createCanvas(width * pixelSize, height * pixelSize);
     };
 
@@ -50,15 +51,48 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
           let [r, g, b] = pixels[y * width + x];
           p5.fill(r, g, b);
           p5.noStroke();
+          const offset = y * width + x;
+          if (hoverOffset == offset) {
+            p5.stroke(0, 0, 0);
+          } else {
+            p5.noStroke();
+          }
           p5.square(x * pixelSize, y * pixelSize, pixelSize);
         }
       }
     };
 
-    p5.mouseClicked = () => {
+    p5.mousePressed = () => {
+      if (
+        p5.mouseX < 0 ||
+        p5.mouseX >= p5.width ||
+        p5.mouseY < 0 ||
+        p5.mouseY >= p5.height
+      ) {
+        return;
+      }
       const x = Math.floor(p5.mouseX / pixelSize);
       const y = Math.floor(p5.mouseY / pixelSize);
-      colorPixel(colorToPlace, y * width + x); // let the server handle it
+      const offset = y * width + x;
+
+      colorPixel(colorToPlace, offset); // let the server handle it
+    };
+
+    p5.mouseMoved = () => {
+      if (
+        p5.mouseX < 0 ||
+        p5.mouseX >= p5.width ||
+        p5.mouseY < 0 ||
+        p5.mouseY >= p5.height
+      ) {
+        hoverOffset = null;
+        return;
+      }
+      console.debug(p5.mouseX, p5.mouseY);
+      const x = Math.floor(p5.mouseX / pixelSize);
+      const y = Math.floor(p5.mouseY / pixelSize);
+      const offset = y * width + x;
+      hoverOffset = offset;
     };
   }
   return sketch;
