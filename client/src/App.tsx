@@ -57,27 +57,16 @@ function App() {
     };
   }, []);
 
-<<<<<<< HEAD
-  // useEffect(() => {
-  //   console.debug(grid)
-  // }, [grid])
-
-  return(
-  <>
-  <div>
-    <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
-    <div className="canvas">
-      {!grid ? <h1>Loading...</h1> : <AppGrid {...grid} />}
-    </div>
-  </div>
-  </>);
-=======
   return (
     <>
-      {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel }} />}
+     <div>
+    <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
+    <div className="canvas">
+    {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel }} />}
+    </div>
+  </div>
     </>
   );
->>>>>>> 5eb0a43bdb0e47196bc6386d5f8708940d920da5
 }
 
 export default App;
