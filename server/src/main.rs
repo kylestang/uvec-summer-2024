@@ -22,10 +22,9 @@ use tracing::{debug, error};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod types;
-use types::WSMessage;
 use types::{InitMessage, Pixel};
+use types::{WSMessage, RESOLUTION};
 
-const RESOLUTION: (usize, usize) = (100, 100);
 const RATELIMIT_MS: u128 = 250;
 
 #[derive(Debug, Clone)]

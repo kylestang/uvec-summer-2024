@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const RESOLUTION: (usize, usize) = (100, 100);
+
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct Pixel(pub u8, pub u8, pub u8);
 impl Default for Pixel {
