@@ -1,9 +1,9 @@
 .body {
     width: 100%;
+    padding: 1em;
 }
 
 .title {
-    width: 100%;
     text-align: center;
     font-size: 5em;
     font-weight: 700;
@@ -19,9 +19,16 @@
     color: gold;
 }
 
+.canvasWrapper {
+    margin: 0.5rem;
+    padding: 2rem 2rem;
+    text-align: center;
+}
+
 .canvas {
-    margin: 1em;
-    border: 2px solid black;
+    display: inline-block;
+    padding: 1rem 1rem;
+    vertical-align: middle;
 }
 
 .canvas:hover {
@@ -29,5 +36,9 @@
 }
 
 .colorPicker {
-    float: left;
+    display: inline-block;
+    padding: 1rem 1rem;
+    vertical-align: middle;
+    float: right;
 }
+  

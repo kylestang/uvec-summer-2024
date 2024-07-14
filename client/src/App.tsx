@@ -70,11 +70,13 @@ function App() {
     <>
       <div>
         <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
+        <div className="canvasWrapper">
         <div className="canvas">
           {!grid ? <h1>Loading...</h1> : <AppGrid {...{ ...grid, colorPixel, colorToPlace }} />}
         </div>
+        <RgbColorPicker className="colorPicker" color={colorToRGB()} onChange={convertToPicker} />
+        </div>
       </div>
-      <RgbColorPicker className="colorPicker" color={colorToRGB()} onChange={convertToPicker} />
     </>
   );
 }
