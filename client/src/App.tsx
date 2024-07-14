@@ -1,11 +1,10 @@
-import { useEffect, useReducer, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useEffect, useReducer } from "react";
 import "./App.css";
 import { Grid, Message } from "./data";
+import { AppGrid } from "./components/Grid";
 
 function gridReducer(state: Grid | null, action: Message): Grid | null {
-  console.debug(action)
+  // console.debug(action)
   switch (action.tag) {
     case "init": {
       const { pixels, height, width } = action;
@@ -33,7 +32,6 @@ function gridReducer(state: Grid | null, action: Message): Grid | null {
 }
 
 function App() {
-  const [count, setCount] = useState(0);
   const [grid, gridDispatch] = useReducer(gridReducer, null);
 
   useEffect(() => {
@@ -41,7 +39,7 @@ function App() {
     const height = 100;
     gridDispatch({
       tag: "init",
-      pixels: Array.from({length: width * height}).map(() => [255, 255, 255]),
+      pixels: Array.from({ length: width * height }).map(() => [255, 255, 255]),
       width,
       height,
     });
@@ -63,35 +61,11 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    console.debug(grid)
-  }, [grid])
+  // useEffect(() => {
+  //   console.debug(grid)
+  // }, [grid])
 
-  return (
-    <>
-      {grid && <div>TODO grid</div>}
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  );
+  return <>{!grid ? <h1>Loading...</h1> : <AppGrid {...grid} />}</>;
 }
 
 export default App;
