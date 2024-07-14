@@ -21,6 +21,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod types;
 use types::Pixel;
+use types::WSMessage;
 
 const RESOLUTION: (usize, usize) = (100, 100);
 
@@ -28,7 +29,7 @@ const RESOLUTION: (usize, usize) = (100, 100);
 struct AppState {
     broadcast_tx: Arc<Mutex<Sender<Message>>>,
     #[allow(dead_code)]
-    pixels: [Pixel; RESOLUTION.0 * RESOLUTION.1],
+    pixels: Arc<Mutex<[Pixel; RESOLUTION.0 * RESOLUTION.1]>>,
 }
 
 #[tokio::main]
@@ -46,7 +47,7 @@ async fn main() {
     let (tx, _) = broadcast::channel(32);
     let app = AppState {
         broadcast_tx: Arc::new(Mutex::new(tx)),
-        pixels: [Pixel::default(); RESOLUTION.0 * RESOLUTION.1],
+        pixels: Arc::new(Mutex::new([Pixel::default(); RESOLUTION.0 * RESOLUTION.1])),
     };
     let app = Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
@@ -85,24 +86,32 @@ async fn handle_socket(ws: WebSocket, app: AppState) {
         });
     }
 
-    recv_from_client(ws_rx, app.broadcast_tx).await;
+    recv_from_client(ws_rx, app).await;
 }
 
-async fn recv_from_client(
-    mut client_rx: SplitStream<WebSocket>,
-    broadcast_tx: Arc<Mutex<Sender<Message>>>,
-) {
+async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) {
     while let Some(Ok(msg)) = client_rx.next().await {
         match msg {
             Message::Close(_) => return,
-            Message::Text(txt) => {}
+            Message::Text(txt) => match serde_json::from_str::<WSMessage>(&txt) {
+                Ok(ws_message) => {
+                    let a: WSMessage = ws_message;
+                    match ws_message {
+                        WSMessage::Init(i) => todo!(),
+                        WSMessage::Draw(i) => todo!(),
+                    }
+                    if app.broadcast_tx.lock().await.send("Hi".into()).is_err() {
+                        println!("Failed to broadcast a message");
+                    }
+                }
+                Err(_) => continue,
+            },
             _ => continue,
-        }
-        if broadcast_tx.lock().await.send(msg).is_err() {
-            println!("Failed to broadcast a message");
         }
     }
 }
+
+async fn handle_message() {}
 
 async fn recv_broadcast(
     client_tx: Arc<Mutex<SplitSink<WebSocket, Message>>>,
