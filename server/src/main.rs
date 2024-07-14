@@ -13,6 +13,7 @@ use tokio::sync::{
     broadcast::{self, Receiver, Sender},
     Mutex,
 };
+use tokio::time::Instant;
 use tower_http::{
     services::ServeDir,
     trace::{DefaultMakeSpan, TraceLayer},
@@ -102,15 +103,20 @@ async fn handle_socket(ws: WebSocket, app: AppState) {
 }
 
 async fn recv_from_client(mut client_rx: SplitStream<WebSocket>, app: AppState) {
+    let mut last_msg_time = Instant::now();
     while let Some(Ok(msg)) = client_rx.next().await {
         match msg {
             Message::Close(_) => return,
             Message::Text(ref txt) => match serde_json::from_str::<WSMessage>(txt) {
                 Ok(ws_message) => {
                     if let WSMessage::Draw(update) = ws_message {
+                        if last_msg_time.elapsed().as_millis() < 1_000 {
+                            continue;
+                        }
                         if update.offset >= RESOLUTION.0 * RESOLUTION.1 {
                             continue;
                         }
+                        last_msg_time = Instant::now();
                         app.pixels.lock().await[update.offset] = update.color;
 
                         if app.broadcast_tx.lock().await.send(msg).is_err() {
