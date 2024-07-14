@@ -1,0 +1,28 @@
+.body {
+    width: 100%;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    font-size: 5em;
+    font-weight: 700;
+    padding: 0.25em;
+}
+
+.blue {
+    color: rgb(70, 70, 255)
+}
+
+.gold {
+    color: gold;
+}
+
+.canvas {
+    margin: 1em;
+    border: 2px solid black;
+}
+
+.canvas:hover {
+    cursor: pointer;
+}

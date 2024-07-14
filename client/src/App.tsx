@@ -65,7 +65,15 @@ function App() {
   //   console.debug(grid)
   // }, [grid])
 
-  return <>{!grid ? <h1>Loading...</h1> : <AppGrid {...grid} />}</>;
+  return(
+  <>
+  <div>
+    <div className="title"><span className="blue">vike/</span><span className="gold">place</span></div>
+    <div className="canvas">
+      {!grid ? <h1>Loading...</h1> : <AppGrid {...grid} />}
+    </div>
+  </div>
+  </>);
 }
 
 export default App;
