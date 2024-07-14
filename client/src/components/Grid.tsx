@@ -79,7 +79,7 @@ function makeSketch({ height, width, pixels, colorPixel, colorToPlace }: GridPro
 
       timedOut = true;
       hoverOffset = null;
-      p5.cursor('not-allowed')
+      // p5.cursor('not-allowed')
       setTimeout(() => {
         timedOut = false;
         p5.noCursor()
