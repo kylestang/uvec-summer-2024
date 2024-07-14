@@ -10,15 +10,15 @@ impl Default for Pixel {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct InitMessage {
-    pixel: Vec<Pixel>,
-    height: u32,
-    width: u32,
+    pub pixels: Vec<Pixel>,
+    pub height: usize,
+    pub width: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DrawMessage {
-    offset: u32,
-    color: Pixel,
+    pub offset: usize,
+    pub color: Pixel,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

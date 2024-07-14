@@ -20,10 +20,10 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod types;
-use types::Pixel;
 use types::WSMessage;
+use types::{InitMessage, Pixel};
 
-const RESOLUTION: (usize, usize) = (100, 100);
+const RESOLUTION: (usize, usize) = (5, 5);
 
 #[derive(Debug, Clone)]
 struct AppState {
@@ -78,6 +78,18 @@ async fn handler(ws: WebSocketUpgrade, State(app): State<AppState>) -> impl Into
 async fn handle_socket(ws: WebSocket, app: AppState) {
     let (ws_tx, ws_rx) = ws.split();
     let ws_tx = Arc::new(Mutex::new(ws_tx));
+
+    let init_struct = InitMessage {
+        pixels: app.pixels.lock().await.to_vec(),
+        width: RESOLUTION.0,
+        height: RESOLUTION.1,
+    };
+    let ws_msg_struct = WSMessage::Init(init_struct);
+    let init_msg = Message::Text(serde_json::to_string(&ws_msg_struct).unwrap());
+    if ws_tx.lock().await.send(init_msg).await.is_err() {
+        eprintln!("Failed to broadcast a message");
+        return;
+    }
 
     {
         let broadcast_rx = app.broadcast_tx.lock().await.subscribe();
