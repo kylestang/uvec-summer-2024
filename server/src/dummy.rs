@@ -30,15 +30,11 @@ fn make_image(location: u32, path: String, width: u32, height: u32) {
     let mut rng = thread_rng();
     pixels.shuffle(&mut rng);
 
-    let mut client = ClientBuilder::new(CLIENT)
-        .unwrap()
-        .connect_insecure()
-        .unwrap();
+    let mut client = ClientBuilder::new(CLIENT).unwrap().connect(None).unwrap();
 
     thread::sleep(Duration::from_millis(500));
 
     for pixel in pixels {
-        println!("YAY");
         let position = location + pixel.0 + pixel.1 * RESOLUTION.0 as u32;
 
         let message = WSMessage::Draw(DrawMessage {
@@ -53,7 +49,7 @@ fn make_image(location: u32, path: String, width: u32, height: u32) {
             .unwrap();
 
         // let sleep_time = rng.gen_range(500..2000);
-        let sleep_time = 300;
+        let sleep_time = 400;
         thread::sleep(Duration::from_millis(sleep_time));
     }
 }

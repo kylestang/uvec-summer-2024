@@ -2,6 +2,8 @@
 
 `vike/place` is an [`r/place`](https://www.reddit.com/r/place/)-like collaborative pixel art game, where users can work cooperatively or competitively to draw whatever they like. We felt that `vike/place` really embodies the spirit of realtime applications, since the nature is very apparent in a competitive environment.
 
+![vike/place running](example.png)
+
 ## Technology
 
 Our frontend is an SPA written in React. Our team was most familiar with this tool, and that was a major deciding factor in using it. We use the built-in browsero [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) for communication with the backend, and use [Zod](https://zod.dev/) for schema validation to prevent errors at the network boundary. We used [p5.js](https://p5js.org/) for rendering to a canvas element, which is where the game lives. We also used [react-colorful](https://omgovich.github.io/react-colorful/) for a more user-friendly color picker. This was all of our dependencies, and we specifically avoided more heavy-weight frameworks like Redux, Nextjs, etc to improve iteration time and flexibility. We use [Vite](https://vitejs.dev/) as our bundler, outputting minified HTML, CSS, and JavaScript to a directory for static hosting.
